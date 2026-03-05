@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1B1B2F">
+    <title>Emare Ekip Yönetici</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="app">
+    <!-- ─── Sidebar ─── -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">🏢</div>
+            <div>
+                <h2>Emare</h2>
+                <span class="sidebar-sub">Ekip Yönetici</span>
+            </div>
+        </div>
+        <div id="project-list" class="project-list"></div>
+        <div class="sidebar-footer">
+            <button onclick="App.showView('pano')" class="btn-dash">
+                <span>📊</span> Genel Pano
+            </button>
+        </div>
+    </aside>
+
+    <!-- ─── Overlay ─── -->
+    <div id="overlay" class="overlay" onclick="App.toggleSidebar()"></div>
+
+    <!-- ─── Main ─── -->
+    <main id="main" class="main">
+        <!-- Top Bar -->
+        <header id="topbar" class="topbar">
+            <button class="btn-menu" onclick="App.toggleSidebar()">☰</button>
+            <div id="topbar-info" class="topbar-info">
+                <div id="topbar-title" class="topbar-title">Emare Ekip Yönetici</div>
+                <div id="topbar-sub" class="topbar-sub"></div>
+            </div>
+            <div class="topbar-actions">
+                <button onclick="App.toggleTeamPanel()" class="btn-icon" title="Ekip Paneli">👥</button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div id="content" class="content"></div>
+
+        <!-- Chat Input -->
+        <div id="chat-input-area" class="chat-input-area hidden">
+            <button class="btn-plus" onclick="App.showTaskModal()" title="Yeni Görev">＋</button>
+            <input type="text" id="chat-input" placeholder="Mesaj yaz..."
+                   onkeydown="if(event.key==='Enter')App.sendMessage()">
+            <button class="btn-send" onclick="App.sendMessage()">➤</button>
+        </div>
+
+        <!-- Bottom Nav (mobile) -->
+        <nav class="bottom-nav">
+            <button onclick="App.showView('chat')" data-view="chat" class="nav-btn active">
+                <span class="nav-icon">💬</span><span class="nav-label">Sohbet</span>
+            </button>
+            <button onclick="App.showView('dosyalar')" data-view="dosyalar" class="nav-btn">
+                <span class="nav-icon">📁</span><span class="nav-label">Dosyalar</span>
+            </button>
+            <button onclick="App.showView('gorevler')" data-view="gorevler" class="nav-btn">
+                <span class="nav-icon">📋</span><span class="nav-label">Görevler</span>
+            </button>
+            <button onclick="App.showView('ekip')" data-view="ekip" class="nav-btn">
+                <span class="nav-icon">👥</span><span class="nav-label">Ekip</span>
+            </button>
+            <button onclick="App.showView('pano')" data-view="pano" class="nav-btn">
+                <span class="nav-icon">📊</span><span class="nav-label">Pano</span>
+            </button>
+        </nav>
+    </main>
+
+    <!-- ─── Team Panel (right) ─── -->
+    <aside id="team-panel" class="team-panel"></aside>
+</div>
+
+<!-- ─── Task Modal ─── -->
+<div id="task-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="App.hideTaskModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📋 Yeni Görev</h3>
+            <button onclick="App.hideTaskModal()" class="btn-close">✕</button>
+        </div>
+        <form onsubmit="App.createTask(event)">
+            <div class="form-group">
+                <label>Görev Başlığı *</label>
+                <input type="text" id="task-title" required placeholder="Ne yapılacak?">
+            </div>
+            <div class="form-group">
+                <label>Açıklama</label>
+                <textarea id="task-desc" rows="3" placeholder="Detaylar..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Öncelik</label>
+                    <select id="task-priority">
+                        <option value="dusuk">🟢 Düşük</option>
+                        <option value="orta" selected>🟡 Orta</option>
+                        <option value="yuksek">🟠 Yüksek</option>
+                        <option value="acil">🔴 Acil</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Atanan Kişi</label>
+                    <select id="task-assignee"><option value="">Seçiniz...</option></select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Son Tarih</label>
+                <input type="date" id="task-deadline">
+            </div>
+            <button type="submit" class="btn-primary">Görev Oluştur</button>
+        </form>
+    </div>
+</div>
+
+<!-- ─── Member Modal ─── -->
+<div id="member-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="App.hideMemberModal()"></div>
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h3 id="member-modal-title">👤 Üye Ekle</h3>
+            <button onclick="App.hideMemberModal()" class="btn-close">✕</button>
+        </div>
+        <form onsubmit="App.saveMember(event)">
+            <input type="hidden" id="member-id">
+            <input type="hidden" id="member-team-id">
+            <div class="form-group">
+                <label>Ad Soyad *</label>
+                <input type="text" id="member-name" required placeholder="Ahmet Yılmaz">
+            </div>
+            <div class="form-group">
+                <label>Rol</label>
+                <select id="member-role">
+                    <option>Takım Lideri</option>
+                    <option>Kıdemli Geliştirici</option>
+                    <option selected>Full-Stack Geliştirici</option>
+                    <option>Geliştirici</option>
+                    <option>Junior Geliştirici</option>
+                    <option>QA / Test Uzmanı</option>
+                    <option>DevOps Mühendisi</option>
+                    <option>UI/UX Tasarımcı</option>
+                    <option>Proje Yöneticisi</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">Kaydet</button>
+        </form>
+    </div>
+</div>
+
+<!-- ─── Task Edit Modal ─── -->
+<div id="task-edit-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="App.hideEditTaskModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✏️ Görevi Düzenle</h3>
+            <button onclick="App.hideEditTaskModal()" class="btn-close">✕</button>
+        </div>
+        <form onsubmit="App.saveEditTask(event)">
+            <input type="hidden" id="edit-task-id">
+            <div class="form-group">
+                <label>Görev Başlığı</label>
+                <input type="text" id="edit-task-title" required>
+            </div>
+            <div class="form-group">
+                <label>Açıklama</label>
+                <textarea id="edit-task-desc" rows="3"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Durum</label>
+                    <select id="edit-task-status">
+                        <option value="yeni">🆕 Yeni</option>
+                        <option value="devam">🔄 Devam Ediyor</option>
+                        <option value="inceleme">🔍 İnceleme</option>
+                        <option value="tamamlandi">✅ Tamamlandı</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Öncelik</label>
+                    <select id="edit-task-priority">
+                        <option value="dusuk">🟢 Düşük</option>
+                        <option value="orta">🟡 Orta</option>
+                        <option value="yuksek">🟠 Yüksek</option>
+                        <option value="acil">🔴 Acil</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Atanan Kişi</label>
+                    <select id="edit-task-assignee"><option value="">Seçiniz...</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Son Tarih</label>
+                    <input type="date" id="edit-task-deadline">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Kaydet</button>
+                <button type="button" class="btn-danger" onclick="App.deleteTaskFromEdit()">🗑️ Sil</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ─── File Viewer/Editor Modal ─── -->
+<div id="file-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="Files.closeFileModal()"></div>
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3 id="file-modal-title">📄 Dosya</h3>
+            <div style="display:flex;gap:4px">
+                <button onclick="Files.toggleEdit()" class="btn-icon" id="file-edit-btn" title="Düzenle">✏️</button>
+                <button onclick="Files.downloadFile()" class="btn-icon" title="İndir">⬇️</button>
+                <button onclick="Files.showShareModal()" class="btn-icon" title="Paylaş">📤</button>
+                <button onclick="Files.closeFileModal()" class="btn-close">✕</button>
+            </div>
+        </div>
+        <div id="file-info-bar" class="file-info-bar"></div>
+        <div id="file-content-area" class="file-content-area">
+            <pre id="file-content-view"><code id="file-content-code"></code></pre>
+            <textarea id="file-content-edit" class="file-editor hidden"></textarea>
+        </div>
+        <div id="file-edit-actions" class="file-edit-actions hidden">
+            <button onclick="Files.saveFile()" class="btn-primary" style="width:auto;padding:8px 20px">💾 Kaydet</button>
+            <button onclick="Files.cancelEdit()" class="btn-danger" style="padding:8px 20px">İptal</button>
+        </div>
+    </div>
+</div>
+
+<!-- ─── New File/Folder Modal ─── -->
+<div id="new-file-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="Files.closeNewFileModal()"></div>
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h3 id="new-file-title">📄 Yeni Dosya</h3>
+            <button onclick="Files.closeNewFileModal()" class="btn-close">✕</button>
+        </div>
+        <form onsubmit="Files.createItem(event)">
+            <div class="form-group">
+                <label>Tür</label>
+                <div class="toggle-group">
+                    <button type="button" class="toggle-btn active" onclick="Files.setNewType(false, this)">📄 Dosya</button>
+                    <button type="button" class="toggle-btn" onclick="Files.setNewType(true, this)">📁 Klasör</button>
+                </div>
+            </div>
+            <input type="hidden" id="new-file-is-dir" value="false">
+            <div class="form-group">
+                <label>İsim *</label>
+                <input type="text" id="new-file-name" required placeholder="ornek.py veya yeni-klasor">
+            </div>
+            <div id="new-file-content-group" class="form-group">
+                <label>İçerik (opsiyonel)</label>
+                <textarea id="new-file-content" rows="6" placeholder="Dosya içeriği..."></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Oluştur</button>
+        </form>
+    </div>
+</div>
+
+<!-- ─── Share File Modal ─── -->
+<div id="share-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="Files.closeShareModal()"></div>
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h3>📤 Dosya Paylaş</h3>
+            <button onclick="Files.closeShareModal()" class="btn-close">✕</button>
+        </div>
+        <div id="share-file-info" class="share-file-info"></div>
+        <form onsubmit="Files.shareFile(event)">
+            <input type="hidden" id="share-src-path">
+            <div class="form-group">
+                <label>Hedef Proje *</label>
+                <select id="share-target-project" required></select>
+            </div>
+            <div class="form-group">
+                <label>Hedef Klasör (boş = kök dizin)</label>
+                <input type="text" id="share-target-path" placeholder="src/shared">
+            </div>
+            <button type="submit" class="btn-primary">📤 Paylaş</button>
+        </form>
+    </div>
+</div>
+
+<!-- ─── Project Add/Edit Modal ─── -->
+<div id="project-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="ProjectMgr.closeModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="project-modal-title">📦 Yeni Proje</h3>
+            <button onclick="ProjectMgr.closeModal()" class="btn-close">✕</button>
+        </div>
+        <form onsubmit="ProjectMgr.save(event)">
+            <input type="hidden" id="proj-edit-id">
+            <div class="form-group">
+                <label>Proje Adı *</label>
+                <input type="text" id="proj-name" required placeholder="Örn: Emare Asistan">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Kısa Kod</label>
+                    <input type="text" id="proj-code" placeholder="AST" maxlength="5" style="text-transform:uppercase">
+                </div>
+                <div class="form-group">
+                    <label>Proje Dizini</label>
+                    <input type="text" id="proj-path" placeholder="/Users/emre/Desktop/proje">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>İkon</label>
+                <div class="icon-picker-row" id="proj-icon-picker">
+                    <div class="icon-option selected" data-icon="📦" onclick="ProjectMgr.pickIcon(this)">📦</div>
+                    <div class="icon-option" data-icon="💰" onclick="ProjectMgr.pickIcon(this)">💰</div>
+                    <div class="icon-option" data-icon="🤖" onclick="ProjectMgr.pickIcon(this)">🤖</div>
+                    <div class="icon-option" data-icon="☁️" onclick="ProjectMgr.pickIcon(this)">☁️</div>
+                    <div class="icon-option" data-icon="🏭" onclick="ProjectMgr.pickIcon(this)">🏭</div>
+                    <div class="icon-option" data-icon="🛡️" onclick="ProjectMgr.pickIcon(this)">🛡️</div>
+                    <div class="icon-option" data-icon="⚡" onclick="ProjectMgr.pickIcon(this)">⚡</div>
+                    <div class="icon-option" data-icon="🎮" onclick="ProjectMgr.pickIcon(this)">🎮</div>
+                    <div class="icon-option" data-icon="📱" onclick="ProjectMgr.pickIcon(this)">📱</div>
+                    <div class="icon-option" data-icon="🌐" onclick="ProjectMgr.pickIcon(this)">🌐</div>
+                    <div class="icon-option" data-icon="🔬" onclick="ProjectMgr.pickIcon(this)">🔬</div>
+                    <div class="icon-option" data-icon="🎯" onclick="ProjectMgr.pickIcon(this)">🎯</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Renk</label>
+                <div class="color-picker-row" id="proj-color-picker">
+                    <div class="color-swatch selected" data-color="#6366f1" style="background:#6366f1" onclick="ProjectMgr.pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#10b981" style="background:#10b981" onclick="ProjectMgr.pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#3b82f6" style="background:#3b82f6" onclick="ProjectMgr.pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6" onclick="ProjectMgr.pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#f59e0b" style="background:#f59e0b" onclick="ProjectMgr.pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#ef4444" style="background:#ef4444" onclick="ProjectMgr.pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#ec4899" style="background:#ec4899" onclick="ProjectMgr.pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#14b8a6" style="background:#14b8a6" onclick="ProjectMgr.pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#f97316" style="background:#f97316" onclick="ProjectMgr.pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#64748b" style="background:#64748b" onclick="ProjectMgr.pickColor(this)"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Açıklama</label>
+                <textarea id="proj-desc" rows="2" placeholder="Proje hakkında kısa bilgi..."></textarea>
+            </div>
+            <div id="proj-teams-group" class="form-group">
+                <label>Takımlar (virgülle ayırın)</label>
+                <input type="text" id="proj-teams" placeholder="Backend Takımı, Frontend Takımı" value="Backend Takımı, Frontend Takımı">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary" style="flex:1">💾 Kaydet</button>
+                <button type="button" id="proj-delete-btn" class="btn-danger hidden" onclick="ProjectMgr.deleteProject()" style="width:auto">🗑️ Sil</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
