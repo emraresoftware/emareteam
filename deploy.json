@@ -1,0 +1,22 @@
+{
+  "slug": "emareteam",
+  "name": "Emare Team",
+  "github_repo": "emraresoftware/emareteam",
+  "branch": "main",
+  "dc": "local",
+  "server_host": null,
+  "server_ssh_port": 22,
+  "remote_path": "/opt/emareteam",
+  "stack": "python-gunicorn",
+  "port": 8317,
+  "domain": "",
+  "deploy_commands": [
+    "cd /opt/emareteam",
+    "git pull origin main",
+    "source venv/bin/activate && pip install -r requirements.txt -q",
+    "sudo systemctl restart emareteam"
+  ],
+  "restart_command": "systemctl status emareteam --no-pager",
+  "auto_deploy_on_push": false,
+  "health_check_url": null
+}
