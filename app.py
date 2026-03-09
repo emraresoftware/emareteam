@@ -4,6 +4,13 @@ from datetime import datetime
 import os, random, shutil, mimetypes, pathlib
 
 app = Flask(__name__)
+
+# === Emare Feedback ===
+from feedback_bp import feedback_bp, FeedbackMsg
+app.register_blueprint(feedback_bp)
+# FeedbackMsg tablosunu oluşturmak için: with app.app_context(): db.create_all()
+# ======================
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "ekip.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
